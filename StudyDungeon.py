@@ -4,16 +4,19 @@ from dotenv import load_dotenv
 
 import discord
 
+from client import supabase
+
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 if TOKEN is None:
     raise ValueError("No token provided. Please set the BOT_TOKEN environment variable.")
-    
+
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+## bot actions
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
