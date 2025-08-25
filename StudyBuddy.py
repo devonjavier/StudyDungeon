@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 
 import discord
+import asyncio
 
 from client import supabase
 
@@ -33,6 +34,11 @@ client = discord.Client(intents=intents)
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
+
+        await client.change_presence(
+            status=discord.Status.online,
+            activity=discord.Game(name="Pomodoro 🍅")  
+        )
 
 @client.event
 async def on_message(message):
