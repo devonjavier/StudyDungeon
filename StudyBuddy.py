@@ -37,7 +37,7 @@ async def on_ready():
 
         await client.change_presence(
             status=discord.Status.online,
-            activity=discord.Game(name="Pomodoro 🍅")  
+            activity=discord.Game(name="Pomodo 🍅")
         )
 
 @client.event
