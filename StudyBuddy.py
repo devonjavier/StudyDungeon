@@ -120,25 +120,29 @@ class StudyBuddy(commands.Bot):
 
     ## functions for bot core actions
 
-    # async def get_study_channel(self, guild) -> discord.VoiceChannel:
-    #     guild_id = guild.id
+    ## flow, check vc -> move -> message contents either a prompt or file, checks first
 
-    #     ## check first
+    ## no way to check rate limiter first
 
-    #     if guild_id not in self.server_configs:
-    #         self.server_configs[guild_id] = await self.load_server_config(guild_id)
+    async def get_study_channel(self, guild) -> discord.VoiceChannel:
+        guild_id = guild.id
 
-    #     config = self.server_configs[guild_id]
+        ## check first
 
-    #     if config['study_channel_id']:
-    #         channel = guild.get_channel(config['study_channel_id'])
-    #         if channel and isinstance(channel, discord.VoiceChannel):
-    #             return channel
+        if guild_id not in self.server_configs:
+            self.server_configs[guild_id] = await self.load_server_config(guild_id)
 
-    #     channel = discord.utils.get(guild.voice_channels, name=config['study_channel_name'])
-    #     return channel
+        config = self.server_configs[guild_id]
 
-    # async def 
+        if config['study_channel_id']:
+            channel = guild.get_channel(config['study_channel_id'])
+            if channel and isinstance(channel, discord.VoiceChannel):
+                return channel
+
+        channel = discord.utils.get(guild.voice_channels, name=config['study_channel_name'])
+        return channel
+
+
 
 
 ## loading env variables
