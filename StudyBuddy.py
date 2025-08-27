@@ -250,7 +250,84 @@ class StudyBuddy(commands.Bot):
                 "options": {"A": "Mathematics", "B": "Science", "C": "Literature", "D": "History"},
                 "correct_answer": "A"
             }]
+        
+    async def start_study_session(self, context, cycles: int, *, topic_text: str = None):
+    
+        user_id = context.author.id
+        guild_id = context.guild.id
+        study_channel = None
+        content = topic_text or ""
 
+        ## preliminary checks
+        if cycles < 1 or cycles > 8:
+            await ctx.send("❌ Number of cycles must be between 1 and 8!")
+            return
+
+        if user_id in self.active_sessions:
+            await ctx.send("You already have an active study session! Use `!study stop` to end it.")
+            return
+
+        study_channel = await self.get_study_channel(ctx.guild)
+        if not study_channel:
+            guild_config = self.server_configs.get(ctx.guild.id, {})
+            channel_name = guild_config.get('study_channel_name', 'study-dungeon')
+            await ctx.send(f"❌ Study voice channel not configured! Use `!setup_study <channel>` or create a channel named '{channel_name}'.")
+            return
+
+        if context.message.attachments:
+            await context.send ("📥 Processing your attachment...")
+            for attachment in context.message.attachments:
+                file_text = await self.extract_text_from_file(attachment)
+                content += "\n\n" + file_text
+
+        if not content.strip():
+            await ctx.send("❌ Please provide study material either as text or file attachments!")
+            return
+        
+
+        ## analyze content 
+        await context.send("🧠 Analyzing your study material")
+        bullet_points = await self.analyze_content_with_ai(content)
+
+        ## create session
+        session = StudySession(user_id, guild_id, topic_text or "Study Session", bullet_points, cycles)
+        self.active_sessions[user_id] = session
+       
+        total_work_time = cycles * 25
+        total_break_time = max(0, cycles - 1) * 5
+
+        ## long break
+        if cycles >= 4:
+            long_breaks = (cycles - 1) // 4
+            total_break_time += long_breaks * 10
+
+        total_estimated = total_work_time + total_break_time
+
+        embed = discord.Embed(
+            title="📚 Study Session Started!",
+            description=f"**Topic:** {session.topic}",
+            color=0x00ff00
+        )
+
+        bullet_text = "\n".join([f"• {point}" for point in bullet_points])
+        embed.add_field(name="Key Study Points", value=bullet_text, inline=False)
+
+
+        ## add progress bar here soon?
+
+        embed.add_field(name="⏱️ Current", value="Starting Cycle 1/{}...".format(cycles), inline=False)
+
+        await context.send(embed=embed)
+
+        if context.author.voice
+            await context.author.move_to(study_channel)
+        else:
+            await ctx.send("⚠️ Join the study voice channel to begin!")
+            return
+        
+
+        ## start timer 
+        session.timer_task = asyncio.create_task(self.run_pomodoro_cycle(ctx, session))
 ## loading env variables
 # load_dotenv()
 
