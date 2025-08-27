@@ -311,7 +311,12 @@ class StudyBuddy(commands.Bot):
         embed.add_field(name="Key Study Points", value=bullet_text, inline=False)
 
 
-        ## add progress bar here soon?
+        progress_bar = "🔴" + "⚪" * (cycles - 1)
+        embed.add_field(
+            name="📊 Planned Cycles", 
+            value=f"{progress_bar}\n**{cycles} cycles** planned ({total_work_time} min work + {total_break_time} min breaks = ~{total_estimated} min total)", 
+            inline=False
+        )
 
         embed.add_field(name="⏱️ Current", value="Starting Cycle 1/{}...".format(cycles), inline=False)
 
@@ -369,6 +374,9 @@ class StudyBuddy(commands.Bot):
                         await context.send(f"🔔 Break's over! Get ready for Cycle {session.current_cycle + 1}/{session.target_cycles} work session.")
                 else:
                     break
+        except asyncio.CancelledError:
+            pass               
+        
 ## loading env variables
 # load_dotenv()
 
