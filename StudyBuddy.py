@@ -326,11 +326,11 @@ class StudyBuddy(commands.Bot):
             await context.author.move_to(study_channel)
         else:
             await context.send("⚠️ Join the study voice channel to begin!")
-            return
-        
+            return        
 
-        ## start timer 
+        ## !! start timer !! 
         session.timer_task = asyncio.create_task(self.run_pomodoro_cycle(context, session))
+
 
     async def run_pomodoro_cycle(self, context, session: StudySession):
         try:
@@ -376,7 +376,41 @@ class StudyBuddy(commands.Bot):
                     break
         except asyncio.CancelledError:
             pass               
+    
+    async def send_progress_update(self, context, session: StudySession, phase: str):
+        completed = session.current_cycle
+        remaining = session.target_cycles - completed
+
+        if phase == "work_start":
+            progress_bar = "🟢" * completed + "🔴" + "⚪" * max(0, remaining - 1)
+            status = f"🎯 **Cycle {completed}/{session.target_cycles}** - Work Session Active"
+        elif phase == "break_start":
+            progress_bar = "🟢" * completed + "⚪" * remaining
+            status = f"✅ **Cycle {completed}/{session.target_cycles}** Complete - Break Time"
+        else:
+            progress_bar = "🟢" * completed + "⚪" * remaining
+            status = f"📊 Progress: {completed}/{session.target_cycles}"
         
+        embed = discord.Embed(
+            title="📈 Study Progress",
+            description=status,
+            color=0x3498db if phase == "break_start" else 0xe67e22
+        )
+        embed.add_field(name="Progress Bar", value=progress_bar, inline=False)
+
+        remaining_work_time = max(0, session.target_cycles - completed) * 25
+        remaining_breaks = max(0, session.target_cycles - completed - 1) * 5
+        estimated_remaining = remaining_work_time + remaining_breaks
+
+        if estimated_remaining > 0:
+            embed.add_field(name="⏱️ Estimated Remaining", value=f"~{estimated_remaining} minutes", inline=True)
+
+        if session.quiz_scores:
+            avg_score = sum(session.quiz_scores) / len(session.quiz_scores)
+            embed.add_field(name="🧠 Quiz Average", value=f"{avg_score:.0f}%", inline=True)
+
+        await context.send(embed=embed)
+
 ## loading env variables
 # load_dotenv()
 
