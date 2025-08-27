@@ -39,8 +39,8 @@ class StudyBuddy(commands.Bot):
 
     ## study command
     @commands.command(name='study')
+    @commands.command(name='study_stop')
     @commands.cooldown(1, 300, commands.BucketType.user) 
-
 
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
@@ -482,6 +482,53 @@ class StudyBuddy(commands.Bot):
         session.is_active = False
         if session.user_id in self.active_sessions:
             del self.active_sessions[session.user_id]
+
+    async def cancel_study_session(self, user_id: int, guild):
+        if user_id in self.active_sessions:
+            session = self.active_sessions[user_id]
+            session.is_active = False
+            
+            if session.timer_task:
+                session.timer_task.cancel()
+            
+            # Find a text channel to send the message
+            text_channel = discord.utils.get(guild.text_channels, name="general")
+            if text_channel:
+                await text_channel.send(f"📴 Study session cancelled for <@{user_id}>. You left the study channel.")
+            
+            del self.active_sessions[user_id]
+    
+    async def stop_study(self, context):
+        user_id = context.author.id
+
+        if user_id in self.active_sessions:
+            session = self.active_sessions[user_id]
+            if session.current_cycle > 0:
+                embed = discord.Embed(
+                    title="📋 Study Session Summary",
+                    description=f"Session stopped early",
+                    color=0xf39c12
+                )
+                embed.add_field(name="📚 Topic", value=session.topic, inline=False)
+                embed.add_field(name="🔄 Completed", value=f"{session.current_cycle}/{session.target_cycles} cycles", inline=True)
+                
+                if session.quiz_scores:
+                    avg_score = sum(session.quiz_scores) / len(session.quiz_scores)
+                    embed.add_field(name="🧠 Quiz Average", value=f"{avg_score:.0f}%", inline=True)
+                
+                progress_bar = "🟢" * session.current_cycle + "🔴" + "⚪" * max(0, session.target_cycles - session.current_cycle - 1)
+                embed.add_field(name="📊 Progress", value=progress_bar, inline=False)
+                
+                await context.send(embed=embed)
+                
+                
+                await self.log_study_session(session)
+            else:
+                await context.send("❌ Study session stopped (no cycles completed).")
+            
+            await self.cancel_study_session(user_id, context.guild)
+        else:
+            await context.send("You don't have an active study session.")
 
 ## loading env variables
 # load_dotenv()
