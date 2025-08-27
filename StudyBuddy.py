@@ -38,6 +38,12 @@ class StudySession:
 
 
 class StudyBuddy(commands.Bot):
+
+    ## study command
+    @commands.command(name='study')
+    @commands.cooldown(1, 300, commands.BucketType.user) 
+
+
     def __init__(self):
         super().__init__(command_prefix="!", intents=intents)
         self.active_sessions: Dict[int, StudySession] = {}  # key: channel_id
@@ -190,7 +196,60 @@ class StudyBuddy(commands.Bot):
             print(f"Error with Gemini API: {e}")
             return ["StudyBuddy was unable to analyze content. Please try again with a different format."]
 
-        
+    async def generate_quiz_with_gemini(self, bullet_points: List[str]) -> List[Dict[str, Any]]:
+        points_text = "\n".join([f"- {point}" for point in bullet_points])
+
+        prompt = f"""
+        You are an AI Quiz Designer. Your task is to create a short, effective quiz to help a student reinforce their learning after a study session.
+
+        **Goal:** Based on the provided key points, generate a 3-question multiple-choice quiz.
+
+        **Quiz Design Principles:**
+        - **Relevance:** Each question must directly test one of the key points provided.
+        - **Clarity:** Questions should be unambiguous and easy to understand.
+        - **Plausible Distractors:** The incorrect options should be plausible and related to the topic to ensure the quiz is a meaningful test of knowledge, not just an obvious giveaway.
+
+        **Source Key Points:**
+        ---
+        {points_text}
+        ---
+
+        **Instructions for Output Format:**
+        Your entire response MUST be a single, valid JSON array. Do not include any text, explanations, or markdown formatting outside of the JSON structure.
+
+        The JSON must follow this exact schema:
+        [
+            {{
+                "question": "The text of the first question?",
+                "options": {{
+                    "A": "Option A text.",
+                    "B": "Option B text.",
+                    "C": "Option C text.",
+                    "D": "Option D text."
+                }},
+                "correct_answer": "C"
+            }},
+            ... (two more question objects)
+        ]
+        """
+
+
+        try:
+            response = model.generate_content(prompt)
+            json_start = response.text.find('[')
+            json_end = response.text.rfind(']') + 1
+            json_text = response.text[json_start:json_end]
+
+            quiz_data = json.loads(json_text)
+            return quiz_data
+        except Exception as e:
+            print(f"Quiz generation error: {e}")
+
+            return [{
+                "question": "What is the main topic being studied?",
+                "options": {"A": "Mathematics", "B": "Science", "C": "Literature", "D": "History"},
+                "correct_answer": "A"
+            }]
 
 ## loading env variables
 # load_dotenv()
