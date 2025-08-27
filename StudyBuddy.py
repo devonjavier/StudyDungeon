@@ -1,5 +1,3 @@
-
-
 import os
 import asyncio
 import json
@@ -328,6 +326,49 @@ class StudyBuddy(commands.Bot):
 
         ## start timer 
         session.timer_task = asyncio.create_task(self.run_pomodoro_cycle(context, session))
+
+    async def run_pomodoro_cycle(self, context, session: StudySession):
+        try:
+            while session.is_active and session.current_cycle < session.target_cycles:
+                session.in_break = False
+                session.current_cycle += 1
+
+                await self.send_progress_update(context, session, "work_start")
+
+                await asyncio.sleep(session.work_time)
+
+                if not session.is_active:
+                    break
+
+                study_channel = await self.get_study_channel(context.guild)
+                if study_channel and context.author.voice and context.author.voice.channel == study_channel:
+                    await ctx.send(f"⏰ {ctx.author.mention} Cycle {session.current_cycle}/{session.target_cycles} work session complete! Time for a quick quiz!")
+
+                    quiz_score = await self.run_quiz(context, session)
+                    session.quiz_scores.append(quiz_score)
+
+                    if session.current_cycle >= session.target_cycles:
+                        await self.complete_study_session(context, session)
+                        break
+
+                    ## break time
+                    session.in_break = True
+
+                    ## long or short?
+                    is_long_break = session.current_cycle % 4 == 0 and session.current_cycle < session.target_cycles
+                    break_duration = session.long_break_time if is_long_break else session.break_time
+                    break_type = "long break" if is_long_break else "short break"
+                    break_minutes = break_duration // 60
+
+                    await context.send(f"☕ {break_type.title()} time! Relax for {break_minutes} minutes. Cycle {session.current_cycle}/{session.target_cycles} complete!")
+                    await self.send_progress_update(context, session, "break_start")
+
+                    await asyncio.sleep(break_duration)
+
+                    if session.is_active and session.current_cycle < session.target_cycles:
+                        await context.send(f"🔔 Break's over! Get ready for Cycle {session.current_cycle + 1}/{session.target_cycles} work session.")
+                else:
+                    break
 ## loading env variables
 # load_dotenv()
 
