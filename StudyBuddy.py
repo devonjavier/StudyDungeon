@@ -347,7 +347,7 @@ class StudyBuddy(commands.Bot):
 
                 study_channel = await self.get_study_channel(context.guild)
                 if study_channel and context.author.voice and context.author.voice.channel == study_channel:
-                    await ctx.send(f"⏰ {ctx.author.mention} Cycle {session.current_cycle}/{session.target_cycles} work session complete! Time for a quick quiz!")
+                    await context.send(f"⏰ {context.author.mention} Cycle {session.current_cycle}/{session.target_cycles} work session complete! Time for a quick quiz!")
 
                     quiz_score = await self.run_quiz(context, session)
                     session.quiz_scores.append(quiz_score)
@@ -410,6 +410,78 @@ class StudyBuddy(commands.Bot):
             embed.add_field(name="🧠 Quiz Average", value=f"{avg_score:.0f}%", inline=True)
 
         await context.send(embed=embed)
+
+    
+    async def run_quiz(self, context, session: StudySession) -> int:
+        quiz_questions = await self.generate_quiz(session.bullet_points)
+        correct_answers = 0
+        
+        for i, question_data in enumerate(quiz_questions, 1):
+            embed = discord.Embed(
+                title=f"📝 Quiz Question {i}/3",
+                description=question_data["question"],
+                color=0x3498db
+            )
+            
+            options_text = "\n".join([f"{key}: {value}" for key, value in question_data["options"].items()])
+            embed.add_field(name="Options", value=options_text, inline=False)
+            
+            view = QuizView(question_data["correct_answer"])
+            message = await context.send(embed=embed, view=view)
+            
+
+            await view.wait()
+            
+            if view.user_answer == question_data["correct_answer"]:
+                correct_answers += 1
+                await context.send("✅ Correct!")
+            else:
+                await context.send(f"❌ Wrong! The correct answer was {question_data['correct_answer']}")
+            
+            await asyncio.sleep(2) 
+        
+        score_percentage = (correct_answers / len(quiz_questions)) * 100
+        await context.send(f"📊 Quiz completed! Score: {correct_answers}/{len(quiz_questions)} ({score_percentage:.0f}%)")
+        
+        return score_percentage
+    
+
+    async def complete_study_session(self, context, session: StudySession):
+        total_duration = (datetime.utcnow() - session.start_stime).total_seconds() / 60
+        avg_quiz_score = sum(session.quiz_scores) / len(session.quiz_scores) if session_scores else 0 
+
+        await self.log_study_session(session)
+
+        embed = discord.Embed(
+            title="🎉 Study Session Complete!",
+            description=f"Congratulations! You completed all {session.target_cycles} Pomodoro cycles!",
+            color=0x00ff00
+        )
+        embed.add_field(name="📚 Topic", value=session.topic, inline=False)
+        embed.add_field(name="⏱️ Total Time", value=f"{total_duration:.0f} minutes", inline=True)
+        embed.add_field(name="🔄 Cycles Completed", value=f"{session.current_cycle}/{session.target_cycles}", inline=True)
+        embed.add_field(name="🧠 Average Quiz Score", value=f"{avg_quiz_score:.0f}%", inline=True)
+
+        ## progress bar update
+        progress_bar = "🟢" * session.target_cycles
+        embed.add_field(name="✅ Final Progress", value=progress_bar, inline=False)
+
+        if avg_quiz_score >= 90:
+            message = "Outstanding!"
+        elif avg_quiz_score >= 75: 
+            message = "Great Job!"
+        elif avg_quiz_score >= 60: 
+            message = "Good!"
+        else:
+            message = "You put in the time! Practice makes perfect!"
+        
+        embed.add_field(name="🎯 Performance", value=message, inline=False)4
+
+        await context.send(embed=embed)
+
+        session.is_active = False
+        if session.user_id in self.active_sessions:
+            del self.active_sessions[session.user_id]
 
 ## loading env variables
 # load_dotenv()
