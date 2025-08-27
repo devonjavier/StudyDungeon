@@ -160,9 +160,37 @@ class StudyBuddy(commands.Bot):
 
         return text
 
+    async def analyze_content_with_gemini(self, content: str) -> List[str]:
+        prompt = f"""
+            You are an expert academic tutor and summarization assistant. Your primary goal is to help a student efficiently prepare for a study session or an exam by extracting the most critical information from their learning material.
 
+            **Task:** Analyze the following text and generate a list of the 5 to 7 most important key concepts, definitions, and takeaways.
 
+            **Criteria for the bullet points:**
+            - **Criticality:** Each point must be essential for understanding the core topic.
+            - **Clarity:** Use clear and straightforward language. Avoid jargon unless it's a defined key term.
+            - **Conciseness:** Each point should be a single, complete thought, ideally no longer than one sentence.
 
+            **Source Text:**
+            ---
+            {content}
+            ---
+
+            **Instructions for Output Format:**
+            - Your response must contain ONLY the bullet points.
+            - Do not include any introductory phrases like "Here are the key points:" or any concluding remarks.
+            - Each bullet point must begin with a hyphen and a space (`- `).
+            """
+        try:
+            response = model.generate_content(prompt)
+            ## isolate
+            bullet_points = [line.strip().lstrip('- ') for line in response.text.split('\n') if line.strip().startswith('-')]
+            return bullet_points
+        except Exception as e:
+            print(f"Error with Gemini API: {e}")
+            return ["StudyBuddy was unable to analyze content. Please try again with a different format."]
+
+        
 
 ## loading env variables
 # load_dotenv()
