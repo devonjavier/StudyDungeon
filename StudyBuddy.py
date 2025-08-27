@@ -120,7 +120,9 @@ class StudyBuddy(commands.Bot):
 
     ## functions for bot core actions
 
-    ## flow, check vc -> move -> message contents either a prompt or file, checks first
+    ## flow, check vc -> move -> message contents either a prompt or file, checks first 
+    ## -> create pointers with gemini api -> start pomodoro timer -> end current timer -> quiz based on pointers
+    ## -> cycle -> end session 
 
     ## no way to check rate limiter first
 
@@ -141,6 +143,23 @@ class StudyBuddy(commands.Bot):
 
         channel = discord.utils.get(guild.voice_channels, name=config['study_channel_name'])
         return channel
+
+    async def extract_text_from_file(self, attachment) -> str:
+        ## extract text 
+
+        text = ""
+
+        if attachment.filename.endswith('.txt') or attachment.filename.endswith('.md'):
+            content = await attachment.read():
+            text = content.decode('utf-8')
+        elif attachment.filename.endswith('.pdf'):
+            content = await attachment.read()
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+            for page in pdf_reader.pages:
+                text += page.extract_text()
+
+        return text
+
 
 
 
