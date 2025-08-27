@@ -260,18 +260,18 @@ class StudyBuddy(commands.Bot):
 
         ## preliminary checks
         if cycles < 1 or cycles > 8:
-            await ctx.send("❌ Number of cycles must be between 1 and 8!")
+            await context.send("❌ Number of cycles must be between 1 and 8!")
             return
 
         if user_id in self.active_sessions:
-            await ctx.send("You already have an active study session! Use `!study stop` to end it.")
+            await context.send("You already have an active study session! Use `!study stop` to end it.")
             return
 
-        study_channel = await self.get_study_channel(ctx.guild)
+        study_channel = await self.get_study_channel(context.guild)
         if not study_channel:
-            guild_config = self.server_configs.get(ctx.guild.id, {})
+            guild_config = self.server_configs.get(context.guild.id, {})
             channel_name = guild_config.get('study_channel_name', 'study-dungeon')
-            await ctx.send(f"❌ Study voice channel not configured! Use `!setup_study <channel>` or create a channel named '{channel_name}'.")
+            await context.send(f"❌ Study voice channel not configured! Use `!setup_study <channel>` or create a channel named '{channel_name}'.")
             return
 
         if context.message.attachments:
@@ -281,7 +281,7 @@ class StudyBuddy(commands.Bot):
                 content += "\n\n" + file_text
 
         if not content.strip():
-            await ctx.send("❌ Please provide study material either as text or file attachments!")
+            await context.send("❌ Please provide study material either as text or file attachments!")
             return
         
 
@@ -322,12 +322,12 @@ class StudyBuddy(commands.Bot):
         if context.author.voice
             await context.author.move_to(study_channel)
         else:
-            await ctx.send("⚠️ Join the study voice channel to begin!")
+            await context.send("⚠️ Join the study voice channel to begin!")
             return
         
 
         ## start timer 
-        session.timer_task = asyncio.create_task(self.run_pomodoro_cycle(ctx, session))
+        session.timer_task = asyncio.create_task(self.run_pomodoro_cycle(context, session))
 ## loading env variables
 # load_dotenv()
 
