@@ -154,7 +154,7 @@ class StudyBuddy(commands.Bot):
         text = ""
 
         if attachment.filename.endswith('.txt') or attachment.filename.endswith('.md'):
-            content = await attachment.read():
+            content = await attachment.read()
             text = content.decode('utf-8')
         elif attachment.filename.endswith('.pdf'):
             content = await attachment.read()
@@ -322,7 +322,7 @@ class StudyBuddy(commands.Bot):
 
         await context.send(embed=embed)
 
-        if context.author.voice
+        if context.author.voice:
             await context.author.move_to(study_channel)
         else:
             await context.send("⚠️ Join the study voice channel to begin!")
@@ -475,7 +475,7 @@ class StudyBuddy(commands.Bot):
         else:
             message = "You put in the time! Practice makes perfect!"
         
-        embed.add_field(name="🎯 Performance", value=message, inline=False)4
+        embed.add_field(name="🎯 Performance", value=message, inline=False)
 
         await context.send(embed=embed)
 
